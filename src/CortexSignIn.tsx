@@ -20,6 +20,8 @@ export interface CortexSignInProps {
   onLocalMode: () => void;
   /** App display name for the local fallback label, e.g. "Canopy". */
   appName: string;
+  /** Set to false when the parent page already shows a title/subtitle. Defaults to true. */
+  showHeader?: boolean;
   /** Overrides for container and sub-element class names. */
   classNames?: {
     root?: string;
@@ -42,6 +44,7 @@ export function CortexSignIn({
   onSuccess,
   onLocalMode,
   appName,
+  showHeader = true,
   classNames: cx = {},
 }: CortexSignInProps) {
   const [mode, setMode] = useState<"login" | "register">("login");
@@ -77,14 +80,16 @@ export function CortexSignIn({
 
   return (
     <div className={cx.root ?? ""}>
-      <div>
-        <p className={cx.title ?? ""} style={{ fontWeight: 600 }}>
-          {mode === "register" ? "Create a Cortex account" : "Sign in with Cortex"}
-        </p>
-        <p className={cx.subtitle ?? ""} style={{ opacity: 0.65, fontSize: "0.8em", marginTop: 2 }}>
-          One account works across Canopy, Chef, and Circuit.
-        </p>
-      </div>
+      {showHeader && (
+        <div>
+          <p className={cx.title ?? ""} style={{ fontWeight: 600 }}>
+            {mode === "register" ? "Create a Cortex account" : "Sign in with Cortex"}
+          </p>
+          <p className={cx.subtitle ?? ""} style={{ opacity: 0.65, fontSize: "0.8em", marginTop: 2 }}>
+            One account works across Canopy, Chef, and Circuit.
+          </p>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 14 }}>
         <div className={cx.field ?? ""}>
