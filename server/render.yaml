@@ -1,7 +1,6 @@
 # Connect at https://dashboard.render.com → New → Blueprint
-# After deploy, set these manually in the Render dashboard:
+# After deploy, set DATABASE_URL manually in the Render dashboard:
 #   DATABASE_URL  — Neon PostgreSQL connection string (neon.tech)
-#   SECRET_KEY    — python -c "import secrets; print(secrets.token_hex(32))"
 services:
   - type: web
     name: cortex-auth
@@ -12,8 +11,6 @@ services:
     healthCheckPath: /health
     envVars:
       - key: DATABASE_URL
-        sync: false
-      - key: SECRET_KEY
         sync: false
       - key: CORS_ORIGINS
         value: https://sameeradsv.github.io,http://localhost:3000,http://localhost:3001,http://localhost:3002,http://127.0.0.1:3000
