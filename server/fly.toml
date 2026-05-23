@@ -1,0 +1,29 @@
+# One-time setup:
+#   fly apps create cortex-auth
+#   fly secrets set DATABASE_URL="postgresql://..." -a cortex-auth
+#   fly secrets set SECRET_KEY="$(python -c 'import secrets; print(secrets.token_hex(32))')" -a cortex-auth
+app = "cortex-auth"
+primary_region = "iad"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  CORS_ORIGINS = "https://sameeradsv.github.io,http://localhost:3000,http://localhost:3001,http://localhost:3002,http://127.0.0.1:3000"
+
+[http_service]
+  internal_port = 7000
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ["app"]
+
+[[http_service.checks]]
+  grace_period = "10s"
+  interval = "30s"
+  method = "GET"
+  path = "/health"
+  timeout = "5s"
+
+# No [[mounts]] — uses Neon PostgreSQL (external), not SQLite
