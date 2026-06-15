@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import secrets
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -44,7 +44,7 @@ def create_session(db: Session, user: User) -> AuthSession:
     session = AuthSession(
         token=token,
         user_id=user.id,
-        expires_at=datetime.utcnow() + timedelta(days=SESSION_DAYS),
+        expires_at=datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(days=SESSION_DAYS),
     )
     db.add(session)
     db.commit()
@@ -58,7 +58,7 @@ def get_user_for_token(db: Session, token: str | None) -> User | None:
     session = db.scalar(
         select(AuthSession).where(
             AuthSession.token == token,
-            AuthSession.expires_at > datetime.utcnow(),
+            AuthSession.expires_at > datetime.now(timezone.utc).replace(tzinfo=None),
         )
     )
     if not session:
