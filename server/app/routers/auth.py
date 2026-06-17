@@ -158,7 +158,8 @@ def request_reset(request: Request, data: RequestResetRequest, db: Session = Dep
 
 
 @router.post("/reset-password", status_code=200)
-def reset_password(data: ResetPasswordRequest, db: Session = Depends(get_db)):
+@limiter.limit("5/minute")
+def reset_password(request: Request, data: ResetPasswordRequest, db: Session = Depends(get_db)):
     if len(data.new_password) < 6:
         raise HTTPException(400, "Password must be at least 6 characters")
     now = _now_naive()
