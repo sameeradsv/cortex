@@ -91,7 +91,10 @@ import { CortexSignIn } from "@shared/cortex";
 | `onLocalMode` | `() => void` | ✓ | Called when the user clicks "Use just \<appName\>" |
 | `appName` | `string` | ✓ | App display name shown in the local-mode label (e.g. `"Canopy"`) |
 | `showHeader` | `boolean` | — | Show the built-in title/subtitle. Set to `false` when the parent page already has a heading. Defaults to `true`. |
+| `autoFocus` | `boolean` | — | Focus the username field on mount. Defaults to `false` — leave it off on mobile as it immediately opens the on-screen keyboard. |
 | `classNames` | `object` | — | Optional overrides for individual element class names (`root`, `title`, `subtitle`, `field`, `label`, `input`, `submitBtn`, `toggleBtn`, `divider`, `localBtn`, `error`) |
+
+**Default responsive styles:** when no `classNames` overrides are provided, the component applies sensible mobile-first defaults — labels are block-level with a 4px bottom gap, inputs are full-width (`width: 100%`, `box-sizing: border-box`), and the submit button is full-width with a 44px minimum height (matching Apple/Google touch-target guidelines). Toggle and local-mode buttons have `12px` vertical padding for the same reason. Passing any of the corresponding `classNames` keys hands full styling control to the caller and removes the inline defaults for that element.
 
 ### Token helpers
 

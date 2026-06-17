@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useId, useState } from "react";
 import { setAuthToken } from "./auth";
 
 export interface CortexSignInUser {
@@ -22,6 +22,11 @@ export interface CortexSignInProps {
   appName: string;
   /** Set to false when the parent page already shows a title/subtitle. Defaults to true. */
   showHeader?: boolean;
+  /**
+   * Focus the username field on mount. Defaults to false — avoid on mobile as it
+   * immediately triggers the on-screen keyboard and pushes the form out of view.
+   */
+  autoFocus?: boolean;
   /** Overrides for container and sub-element class names. */
   classNames?: {
     root?: string;
@@ -45,8 +50,15 @@ export function CortexSignIn({
   onLocalMode,
   appName,
   showHeader = true,
+  autoFocus = false,
   classNames: cx = {},
 }: CortexSignInProps) {
+  // useId ensures unique label/input associations when the component renders
+  // more than once in the same document (e.g. mobile drawer + desktop sidebar).
+  const uid = useId();
+  const usernameId = `${uid}-username`;
+  const passwordId = `${uid}-password`;
+
   const [mode, setMode] = useState<"login" | "register">("login");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -93,23 +105,36 @@ export function CortexSignIn({
 
       <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 14 }}>
         <div className={cx.field ?? ""}>
-          <label className={cx.label ?? ""} htmlFor="cx-username">Username</label>
+          <label
+            className={cx.label ?? ""}
+            htmlFor={usernameId}
+            style={cx.label ? undefined : { display: "block", marginBottom: 4 }}
+          >
+            Username
+          </label>
           <input
-            id="cx-username"
+            id={usernameId}
             className={cx.input ?? ""}
             type="text"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             placeholder="your username"
             required
-            autoFocus
+            autoFocus={autoFocus}
             autoComplete="username"
+            style={cx.input ? undefined : { display: "block", width: "100%", boxSizing: "border-box" }}
           />
         </div>
         <div className={cx.field ?? ""}>
-          <label className={cx.label ?? ""} htmlFor="cx-password">Password</label>
+          <label
+            className={cx.label ?? ""}
+            htmlFor={passwordId}
+            style={cx.label ? undefined : { display: "block", marginBottom: 4 }}
+          >
+            Password
+          </label>
           <input
-            id="cx-password"
+            id={passwordId}
             className={cx.input ?? ""}
             type="password"
             value={password}
@@ -118,12 +143,18 @@ export function CortexSignIn({
             required
             minLength={6}
             autoComplete={mode === "register" ? "new-password" : "current-password"}
+            style={cx.input ? undefined : { display: "block", width: "100%", boxSizing: "border-box" }}
           />
         </div>
 
         {error && <p className={cx.error ?? ""} style={{ color: "red", fontSize: "0.8em" }}>{error}</p>}
 
-        <button type="submit" disabled={loading} className={cx.submitBtn ?? ""}>
+        <button
+          type="submit"
+          disabled={loading}
+          className={cx.submitBtn ?? ""}
+          style={cx.submitBtn ? undefined : { minHeight: 44, padding: "10px 16px", width: "100%" }}
+        >
           {loading ? "Please wait…" : mode === "register" ? "Create Cortex account →" : "Sign in with Cortex →"}
         </button>
 
@@ -131,7 +162,7 @@ export function CortexSignIn({
           type="button"
           onClick={() => { setMode(mode === "login" ? "register" : "login"); setError(null); setPassword(""); }}
           className={cx.toggleBtn ?? ""}
-          style={{ fontSize: "0.78em", opacity: 0.7, background: "none", border: "none", cursor: "pointer", textAlign: "left", padding: 0 }}
+          style={{ fontSize: "0.78em", opacity: 0.7, background: "none", border: "none", cursor: "pointer", textAlign: "left", padding: "12px 0" }}
         >
           {mode === "login" ? "No Cortex account? Create one" : "Already have a Cortex account? Sign in"}
         </button>
@@ -147,7 +178,7 @@ export function CortexSignIn({
         type="button"
         onClick={onLocalMode}
         className={cx.localBtn ?? ""}
-        style={{ fontSize: "0.82em", opacity: 0.6, background: "none", border: "none", cursor: "pointer", padding: 0 }}
+        style={{ fontSize: "0.82em", opacity: 0.6, background: "none", border: "none", cursor: "pointer", padding: "12px 0" }}
       >
         Use just {appName} →
       </button>
