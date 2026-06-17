@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from contextlib import asynccontextmanager
 
 from dotenv import load_dotenv
 from fastapi import FastAPI
@@ -11,9 +12,14 @@ from app.routers import auth
 
 load_dotenv()
 
-Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="Cortex Auth", version="1.0.0")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    Base.metadata.create_all(bind=engine)
+    yield
+
+
+app = FastAPI(title="Cortex Auth", version="1.0.0", lifespan=lifespan)
 
 _raw_origins = os.getenv("CORS_ORIGINS", "http://localhost:3000")
 _origins = [o.strip() for o in _raw_origins.split(",") if o.strip()]

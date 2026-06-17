@@ -16,7 +16,7 @@ if not _db_url:
 
 _connect_args = {"check_same_thread": False} if _db_url.startswith("sqlite") else {}
 
-engine = create_engine(_db_url, connect_args=_connect_args)
+engine = create_engine(_db_url, connect_args=_connect_args, pool_pre_ping=True)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 

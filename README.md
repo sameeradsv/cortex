@@ -6,9 +6,10 @@ Shared auth and crypto primitives for Next.js apps in this monorepo (canopy, che
 
 | Export | File | Description |
 |--------|------|-------------|
-| `AuthProvider`, `useAuth`, `AuthUser` | `src/AuthContext.tsx` | React context that validates a stored token against the backend on mount, exposes `user`, `loading`, `logout`, and `refetch` |
+| `AuthProvider`, `useAuth`, `AuthUser` | `src/AuthContext.tsx` | React context — optimistically restores auth state from cache on mount, then silently revalidates with the server |
 | `CortexSignIn`, `CortexSignInProps`, `CortexSignInUser` | `src/CortexSignIn.tsx` | Drop-in sign-in form for Cortex accounts with a "use just this app" local-mode escape hatch |
 | `getAuthToken`, `setAuthToken` | `src/auth.ts` | `localStorage` token helpers keyed by a caller-supplied key |
+| `getCachedUser`, `setCachedUser` | `src/auth.ts` | `localStorage` user-object cache keyed by token key (used internally by `AuthProvider`) |
 | `encryptBlob`, `decryptBlob` | `src/crypto.ts` | AES-GCM-256 encryption with PBKDF2-SHA256 (390k iterations), random salt+IV per encryption |
 
 ## Installing in a Next.js app
@@ -55,6 +56,10 @@ const { user, loading, logout, refetch } = useAuth();
 - `tokenKey` — `localStorage` key to read/write the bearer token
 - `authPath` — optional, defaults to `"/api/auth"`; prefix for `/me` and `/logout` endpoints
 
+**Optimistic auth:** on mount, `AuthProvider` immediately restores `user` and sets `loading: false` from a localStorage cache, then revalidates with the server in the background. Consuming apps render without waiting for a network round-trip. If the server rejects the token (expired/invalid), the user is redirected to `/login` after the background check completes. A network error during revalidation preserves the cached state rather than logging the user out.
+
+`loading` is only `true` on the very first visit (no cache yet) or after an explicit `refetch()` call when no cache is available.
+
 ### CortexSignIn component
 
 Drop-in form that handles Cortex account login/register and exposes a "use just this app" escape hatch for local-mode auth.
@@ -97,6 +102,8 @@ const token = getAuthToken("myapp_auth_token");
 setAuthToken("myapp_auth_token", null); // clears the token
 ```
 
+`getCachedUser` and `setCachedUser` are used internally by `AuthProvider` but are exported if you need to pre-populate or invalidate the cache manually (e.g. after a server-side session invalidation).
+
 ### Encryption
 
 ```ts
@@ -107,6 +114,13 @@ const plaintext = await decryptBlob(encrypted, passphrase); // returns string
 ```
 
 `decryptBlob` also accepts blobs with `format: "canopy-encrypted-export"` (the legacy format used before this package was extracted from Canopy), so old encrypted data migrates without any conversion step.
+
+## Auth server
+
+The `server/` directory is a FastAPI identity service deployed to Render backed by a Neon PostgreSQL database.
+
+- **Lifespan startup:** `Base.metadata.create_all` runs inside the FastAPI `lifespan` context, after uvicorn is ready to serve. The `/health` endpoint is available immediately on cold start while DB init completes in the background.
+- **Connection resilience:** `pool_pre_ping=True` on the SQLAlchemy engine re-tests connections before use, preventing stale-connection errors after Neon's serverless pooler drops idle connections.
 
 ## Updating cortex
 

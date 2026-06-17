@@ -8,7 +8,7 @@ import {
   useState,
 } from "react";
 import { useRouter } from "next/navigation";
-import { getAuthToken, setAuthToken } from "./auth";
+import { getAuthToken, setAuthToken, getCachedUser, setCachedUser } from "./auth";
 
 export interface AuthUser {
   id: number;
@@ -42,6 +42,7 @@ interface AuthProviderProps {
 }
 
 export function AuthProvider({ children, apiBase, tokenKey, authPath = "/api/auth" }: AuthProviderProps) {
+  // Start null/true to match SSR; useEffect applies cache before first paint.
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
@@ -49,22 +50,32 @@ export function AuthProvider({ children, apiBase, tokenKey, authPath = "/api/aut
   const validate = useCallback(async () => {
     const token = getAuthToken(tokenKey);
     if (!token) {
+      setCachedUser(tokenKey, null);
       setUser(null);
       setLoading(false);
       return;
+    }
+    // Apply cache immediately so the UI renders before the network round-trip.
+    const cached = getCachedUser<AuthUser>(tokenKey);
+    if (cached) {
+      setUser(cached);
+      setLoading(false);
     }
     try {
       const res = await fetch(`${apiBase}${authPath}/me`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
-        setUser(await res.json());
+        const fresh: AuthUser = await res.json();
+        setCachedUser(tokenKey, fresh);
+        setUser(fresh);
       } else {
         setAuthToken(tokenKey, null);
+        setCachedUser(tokenKey, null);
         setUser(null);
       }
     } catch {
-      setUser(null);
+      // Network error — keep existing state rather than logging the user out.
     } finally {
       setLoading(false);
     }
@@ -85,12 +96,12 @@ export function AuthProvider({ children, apiBase, tokenKey, authPath = "/api/aut
       // proceed even if server call fails
     }
     setAuthToken(tokenKey, null);
+    setCachedUser(tokenKey, null);
     setUser(null);
     router.push("/login");
   }, [apiBase, authPath, tokenKey, router]);
 
   const refetch = useCallback(async () => {
-    setLoading(true);
     await validate();
   }, [validate]);
 
