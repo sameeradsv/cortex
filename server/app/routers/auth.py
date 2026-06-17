@@ -1,10 +1,11 @@
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Header, HTTPException
 from pydantic import BaseModel
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from app.auth_utils import create_session, hash_password, verify_password, get_user_for_token
@@ -29,7 +30,7 @@ class LoginRequest(BaseModel):
 class UserRead(BaseModel):
     id: int
     username: str
-    created_at: str
+    created_at: datetime
 
     model_config = {"from_attributes": True}
 
@@ -70,7 +71,7 @@ def register(data: RegisterRequest, db: Session = Depends(get_db)):
         raise HTTPException(400, "Password must be at least 6 characters")
 
     username = data.username.strip().lower()
-    if db.scalar(select(User).where(User.username == username)):
+    if db.scalar(select(User.id).where(User.username == username)):
         raise HTTPException(409, "Username already taken")
 
     user = User(username=username, password_hash=hash_password(data.password))
@@ -78,10 +79,7 @@ def register(data: RegisterRequest, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(user)
     session = create_session(db, user)
-    return AuthResponse(
-        token=session.token,
-        user=UserRead(id=user.id, username=user.username, created_at=str(user.created_at)),
-    )
+    return AuthResponse(token=session.token, user=UserRead.model_validate(user))
 
 
 @router.post("/login", response_model=AuthResponse)
@@ -91,15 +89,12 @@ def login(data: LoginRequest, db: Session = Depends(get_db)):
     if not user or not verify_password(data.password, user.password_hash):
         raise HTTPException(401, "Invalid username or password")
     session = create_session(db, user)
-    return AuthResponse(
-        token=session.token,
-        user=UserRead(id=user.id, username=user.username, created_at=str(user.created_at)),
-    )
+    return AuthResponse(token=session.token, user=UserRead.model_validate(user))
 
 
 @router.get("/me", response_model=UserRead)
 def me(user: User = Depends(_current_user)):
-    return UserRead(id=user.id, username=user.username, created_at=str(user.created_at))
+    return UserRead.model_validate(user)
 
 
 @router.delete("/logout", status_code=204)
@@ -110,7 +105,5 @@ def logout(
 ):
     if authorization and authorization.lower().startswith("bearer "):
         token = authorization[7:].strip()
-        session = db.get(AuthSession, token)
-        if session:
-            db.delete(session)
-            db.commit()
+        db.execute(delete(AuthSession).where(AuthSession.token == token))
+        db.commit()

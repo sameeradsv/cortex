@@ -56,7 +56,7 @@ const { user, loading, logout, refetch } = useAuth();
 - `tokenKey` — `localStorage` key to read/write the bearer token
 - `authPath` — optional, defaults to `"/api/auth"`; prefix for `/me` and `/logout` endpoints
 
-**Optimistic auth:** on mount, `AuthProvider` immediately restores `user` and sets `loading: false` from a localStorage cache, then revalidates with the server in the background. Consuming apps render without waiting for a network round-trip. If the server rejects the token (expired/invalid), the user is redirected to `/login` after the background check completes. A network error during revalidation preserves the cached state rather than logging the user out.
+**Optimistic auth:** on mount, `AuthProvider` immediately restores `user` and sets `loading: false` from a localStorage cache, then revalidates with the server in the background. Consuming apps render without waiting for a network round-trip. If the server rejects the token (expired/invalid), the user is redirected to `/login` after the background check completes. A network error during revalidation preserves the cached state rather than logging the user out. The background fetch is cancelled via `AbortController` if the component unmounts before it completes.
 
 `loading` is only `true` on the very first visit (no cache yet) or after an explicit `refetch()` call when no cache is available.
 
@@ -121,6 +121,8 @@ The `server/` directory is a FastAPI identity service deployed to Render backed 
 
 - **Lifespan startup:** `Base.metadata.create_all` runs inside the FastAPI `lifespan` context, after uvicorn is ready to serve. The `/health` endpoint is available immediately on cold start while DB init completes in the background.
 - **Connection resilience:** `pool_pre_ping=True` on the SQLAlchemy engine re-tests connections before use, preventing stale-connection errors after Neon's serverless pooler drops idle connections.
+- **Pool sizing:** `pool_size=2, max_overflow=3` — tuned for a single Render free-tier instance against Neon's connection limits. SQLite (local dev) uses default pool settings.
+- **`created_at` format:** all API responses serialize `created_at` as ISO 8601 (`"2024-01-15T10:30:00"`) via Pydantic's `model_validate` — the `AuthUser.created_at: string` field on the frontend receives this directly.
 
 ## Updating cortex
 

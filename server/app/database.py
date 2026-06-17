@@ -15,8 +15,9 @@ if not _db_url:
     _db_url = "sqlite:///data/cortex.db"
 
 _connect_args = {"check_same_thread": False} if _db_url.startswith("sqlite") else {}
+_pool_kwargs = {} if _db_url.startswith("sqlite") else {"pool_size": 2, "max_overflow": 3}
 
-engine = create_engine(_db_url, connect_args=_connect_args, pool_pre_ping=True)
+engine = create_engine(_db_url, connect_args=_connect_args, pool_pre_ping=True, **_pool_kwargs)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 

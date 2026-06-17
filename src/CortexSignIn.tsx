@@ -102,6 +102,7 @@ export function CortexSignIn({
             onChange={(e) => setUsername(e.target.value)}
             placeholder="your username"
             required
+            autoFocus
             autoComplete="username"
           />
         </div>

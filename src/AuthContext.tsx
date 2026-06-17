@@ -47,7 +47,7 @@ export function AuthProvider({ children, apiBase, tokenKey, authPath = "/api/aut
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  const validate = useCallback(async () => {
+  const validate = useCallback(async (signal?: AbortSignal) => {
     const token = getAuthToken(tokenKey);
     if (!token) {
       setCachedUser(tokenKey, null);
@@ -61,9 +61,11 @@ export function AuthProvider({ children, apiBase, tokenKey, authPath = "/api/aut
       setUser(cached);
       setLoading(false);
     }
+    let aborted = false;
     try {
       const res = await fetch(`${apiBase}${authPath}/me`, {
         headers: { Authorization: `Bearer ${token}` },
+        signal,
       });
       if (res.ok) {
         const fresh: AuthUser = await res.json();
@@ -74,15 +76,18 @@ export function AuthProvider({ children, apiBase, tokenKey, authPath = "/api/aut
         setCachedUser(tokenKey, null);
         setUser(null);
       }
-    } catch {
+    } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") aborted = true;
       // Network error — keep existing state rather than logging the user out.
     } finally {
-      setLoading(false);
+      if (!aborted) setLoading(false);
     }
   }, [apiBase, authPath, tokenKey]);
 
   useEffect(() => {
-    validate();
+    const controller = new AbortController();
+    validate(controller.signal);
+    return () => controller.abort();
   }, [validate]);
 
   const logout = useCallback(async () => {
