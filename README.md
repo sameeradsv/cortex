@@ -60,7 +60,9 @@ const { user, loading, logout, refetch } = useAuth();
 
 **Instant logout:** `logout()` clears the token, cache, and user state then redirects immediately — the UI responds without waiting for the server. The `DELETE /auth/logout` request fires in the background to invalidate the server-side session.
 
-`loading` is only `true` on the very first visit (no cache yet) or after an explicit `refetch()` call when no cache is available.
+`loading` is only `true` on the very first visit (no cache yet). All subsequent validations — including `refetch()` — run silently without setting `loading: true`.
+
+`refetch()` re-runs the background validation and updates `user` with a fresh server response. Call it after a successful login (e.g. inside `CortexSignIn`'s `onSuccess`) to sync auth state without a page reload.
 
 ### CortexSignIn component
 
