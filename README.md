@@ -134,23 +134,36 @@ The `server/` directory is a FastAPI identity service deployed to Render backed 
 
 ## Viewing the Neon database
 
-Each app (canopy, chef, circuit) and the cortex auth server share a Neon PostgreSQL instance. Three ways to browse or query data:
+Each app (Canopy, Chef, Circuit) and the Cortex auth server each have their own Neon PostgreSQL database. Four ways to browse or query data:
 
-### 1. Neon console SQL editor (no install)
-Go to [console.neon.tech](https://console.neon.tech) → open the project → **SQL Editor** tab. Run any query directly:
-```sql
-SELECT * FROM people LIMIT 20;
-SELECT * FROM interactions ORDER BY occurred_at DESC LIMIT 10;
+### Getting the connection string
+
+**From Render (quickest):** go to the app's Render service → **Environment** tab → copy `DATABASE_URL`. It has this shape:
+
+```
+postgresql://user:password@ep-xxxx-xxxx.region.aws.neon.tech/dbname?sslmode=require
+                                                              ──────
+                                                         ↑ database name
 ```
 
+The database name is everything between the last `/` and the `?`. That name is also visible in the Neon console under **Connection Details**.
+
+**From Neon directly:** [console.neon.tech](https://console.neon.tech) → open the project → **Connection Details** → copy the connection string.
+
+---
+
+### 1. Neon console SQL editor (no install)
+[console.neon.tech](https://console.neon.tech) → open the project → **SQL Editor** tab. Run any query directly.
+
 ### 2. psql
-Grab the connection string from the Neon dashboard (Connection Details → copy the `psql` command) and run:
 ```bash
-psql "postgresql://user:password@host/dbname?sslmode=require"
+psql "postgresql://user:password@ep-xxxx.neon.tech/dbname?sslmode=require"
+# or if DATABASE_URL is already in your environment:
+psql "$DATABASE_URL"
 ```
 
 ### 3. GUI client (TablePlus / DBeaver / pgAdmin)
-Paste the same connection string. TablePlus has a free tier and works well on Windows/Mac.
+Paste the connection string. TablePlus has a free tier and works well on Windows/Mac.
 
 ### 4. App export endpoint (no DB client needed)
 Each app exposes a JSON dump of the current user's data:
@@ -158,7 +171,63 @@ Each app exposes a JSON dump of the current user's data:
 GET /api/export
 Authorization: Bearer <token>
 ```
-Returns all records as JSON. Useful for quick data checks without a DB client. (`AUTH_REQUIRED=true` in production — token required.)
+Returns all records as JSON. Useful for quick data checks without a DB client. Requires a valid token in all environments.
+
+---
+
+### Example queries per app
+
+**Cortex auth server** (`server/`)
+```sql
+-- all registered users
+SELECT id, username, created_at FROM users ORDER BY created_at DESC;
+
+-- active (non-expired) sessions
+SELECT token, user_id, expires_at FROM auth_sessions
+WHERE expires_at > NOW() ORDER BY expires_at DESC;
+```
+
+**Canopy** (people & interactions)
+```sql
+-- all people
+SELECT id, name, relationship_type, created_at FROM people ORDER BY created_at DESC;
+
+-- recent interactions
+SELECT id, summary, occurred_at, person_id FROM interactions
+ORDER BY occurred_at DESC LIMIT 20;
+
+-- interactions for a specific person
+SELECT i.summary, i.occurred_at FROM interactions i
+JOIN people p ON p.id = i.person_id
+WHERE p.name ILIKE '%alice%'
+ORDER BY i.occurred_at DESC;
+```
+
+**Chef** (pantry & decisions)
+```sql
+-- current pantry
+SELECT name, quantity, unit, expiry_date FROM ingredients
+WHERE discarded_at IS NULL ORDER BY expiry_date ASC NULLS LAST;
+
+-- expiring within 3 days
+SELECT name, expiry_date FROM ingredients
+WHERE discarded_at IS NULL AND expiry_date <= NOW() + INTERVAL '3 days'
+ORDER BY expiry_date ASC;
+
+-- recent decisions
+SELECT decision, recipe_name, satisfaction, created_at FROM cooking_history
+ORDER BY created_at DESC LIMIT 20;
+```
+
+**Circuit** (tasks)
+```sql
+-- all incomplete tasks
+SELECT id, text, tag, scheduled_at FROM tasks
+WHERE completed = false ORDER BY scheduled_at ASC NULLS LAST;
+
+-- tasks by tag
+SELECT text, tag, completed FROM tasks WHERE tag = 'work' ORDER BY created_at DESC;
+```
 
 ## Updating cortex
 
