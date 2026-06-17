@@ -18,7 +18,10 @@ async function deriveKey(passphrase: string, salt: Uint8Array<ArrayBuffer>): Pro
 }
 
 function b64encode(buf: ArrayBuffer): string {
-  return btoa(String.fromCharCode(...new Uint8Array(buf)));
+  const bytes = new Uint8Array(buf);
+  let binary = "";
+  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+  return btoa(binary);
 }
 
 function b64decode(s: string): Uint8Array<ArrayBuffer> {

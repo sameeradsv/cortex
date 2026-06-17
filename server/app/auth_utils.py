@@ -4,7 +4,7 @@ import hashlib
 import secrets
 from datetime import datetime, timedelta, timezone
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from app.models import AuthSession, User
@@ -39,12 +39,25 @@ def verify_password(password: str, stored: str) -> bool:
     return secrets.compare_digest(digest.hex(), digest_hex)
 
 
+def _now_naive() -> datetime:
+    # DateTime columns are tz-naive; strip tzinfo after computing in UTC so
+    # comparisons stay correct without requiring a schema migration.
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
+
 def create_session(db: Session, user: User) -> AuthSession:
+    # Purge this user's expired sessions before creating a new one.
+    db.execute(
+        delete(AuthSession).where(
+            AuthSession.user_id == user.id,
+            AuthSession.expires_at < _now_naive(),
+        )
+    )
     token = secrets.token_urlsafe(32)
     session = AuthSession(
         token=token,
         user_id=user.id,
-        expires_at=datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(days=SESSION_DAYS),
+        expires_at=_now_naive() + timedelta(days=SESSION_DAYS),
     )
     db.add(session)
     db.commit()
@@ -55,12 +68,11 @@ def create_session(db: Session, user: User) -> AuthSession:
 def get_user_for_token(db: Session, token: str | None) -> User | None:
     if not token:
         return None
-    session = db.scalar(
-        select(AuthSession).where(
+    return db.scalar(
+        select(User)
+        .join(AuthSession, AuthSession.user_id == User.id)
+        .where(
             AuthSession.token == token,
-            AuthSession.expires_at > datetime.now(timezone.utc).replace(tzinfo=None),
+            AuthSession.expires_at > _now_naive(),
         )
     )
-    if not session:
-        return None
-    return db.get(User, session.user_id)

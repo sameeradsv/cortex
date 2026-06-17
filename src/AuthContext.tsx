@@ -68,7 +68,7 @@ export function AuthProvider({ children, apiBase, tokenKey, authPath = "/api/aut
     } finally {
       setLoading(false);
     }
-  }, [apiBase, tokenKey]);
+  }, [apiBase, authPath, tokenKey]);
 
   useEffect(() => {
     validate();
@@ -87,7 +87,7 @@ export function AuthProvider({ children, apiBase, tokenKey, authPath = "/api/aut
     setAuthToken(tokenKey, null);
     setUser(null);
     router.push("/login");
-  }, [apiBase, tokenKey, router]);
+  }, [apiBase, authPath, tokenKey, router]);
 
   const refetch = useCallback(async () => {
     setLoading(true);
