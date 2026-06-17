@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException, Response
 from pydantic import BaseModel
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
@@ -93,7 +93,8 @@ def login(data: LoginRequest, db: Session = Depends(get_db)):
 
 
 @router.get("/me", response_model=UserRead)
-def me(user: User = Depends(_current_user)):
+def me(user: User = Depends(_current_user), response: Response = None):
+    response.headers["Cache-Control"] = "private, max-age=30"
     return UserRead.model_validate(user)
 
 

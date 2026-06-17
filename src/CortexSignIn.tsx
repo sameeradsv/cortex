@@ -129,7 +129,7 @@ export function CortexSignIn({
 
         <button
           type="button"
-          onClick={() => { setMode(mode === "login" ? "register" : "login"); setError(null); }}
+          onClick={() => { setMode(mode === "login" ? "register" : "login"); setError(null); setPassword(""); }}
           className={cx.toggleBtn ?? ""}
           style={{ fontSize: "0.78em", opacity: 0.7, background: "none", border: "none", cursor: "pointer", textAlign: "left", padding: 0 }}
         >

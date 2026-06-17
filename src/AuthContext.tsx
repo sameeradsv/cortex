@@ -69,6 +69,8 @@ export function AuthProvider({ children, apiBase, tokenKey, authPath = "/api/aut
       });
       if (res.ok) {
         const fresh: AuthUser = await res.json();
+        // Guard against logout firing while the fetch was in-flight.
+        if (!getAuthToken(tokenKey)) return;
         setCachedUser(tokenKey, fresh);
         setUser(fresh);
       } else {

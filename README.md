@@ -121,6 +121,7 @@ The `server/` directory is a FastAPI identity service deployed to Render backed 
 
 - **Lifespan startup:** `Base.metadata.create_all` runs inside the FastAPI `lifespan` context, after uvicorn is ready to serve. The `/health` endpoint is available immediately on cold start while DB init completes in the background.
 - **Connection resilience:** `pool_pre_ping=True` on the SQLAlchemy engine re-tests connections before use, preventing stale-connection errors after Neon's serverless pooler drops idle connections.
+- **`/auth/me` response caching:** the endpoint sets `Cache-Control: private, max-age=30` so the browser reuses the response for 30 seconds. Multiple tabs opening at the same time hit the server once rather than once per tab.
 - **Pool sizing:** `pool_size=2, max_overflow=3` — tuned for a single Render free-tier instance against Neon's connection limits. SQLite (local dev) uses default pool settings.
 - **`created_at` format:** all API responses serialize `created_at` as ISO 8601 (`"2024-01-15T10:30:00"`) via Pydantic's `model_validate` — the `AuthUser.created_at: string` field on the frontend receives this directly.
 

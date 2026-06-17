@@ -46,18 +46,19 @@ def _now_naive() -> datetime:
 
 
 def create_session(db: Session, user: User) -> AuthSession:
+    now = _now_naive()
     # Purge this user's expired sessions before creating a new one.
     db.execute(
         delete(AuthSession).where(
             AuthSession.user_id == user.id,
-            AuthSession.expires_at < _now_naive(),
+            AuthSession.expires_at < now,
         )
     )
     token = secrets.token_urlsafe(32)
     session = AuthSession(
         token=token,
         user_id=user.id,
-        expires_at=_now_naive() + timedelta(days=SESSION_DAYS),
+        expires_at=now + timedelta(days=SESSION_DAYS),
     )
     db.add(session)
     db.commit()
