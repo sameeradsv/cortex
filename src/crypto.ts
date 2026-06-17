@@ -5,11 +5,11 @@ function toBuffer(length: number): Uint8Array<ArrayBuffer> {
   return new Uint8Array(new ArrayBuffer(length));
 }
 
-async function deriveKey(passphrase: string, salt: Uint8Array<ArrayBuffer>): Promise<CryptoKey> {
+async function deriveKey(passphrase: string, salt: Uint8Array<ArrayBuffer>, iterations = PBKDF2_ITERATIONS): Promise<CryptoKey> {
   const enc = new TextEncoder();
   const base = await crypto.subtle.importKey("raw", enc.encode(passphrase), "PBKDF2", false, ["deriveKey"]);
   return crypto.subtle.deriveKey(
-    { name: "PBKDF2", salt, iterations: PBKDF2_ITERATIONS, hash: "SHA-256" },
+    { name: "PBKDF2", salt, iterations, hash: "SHA-256" },
     base,
     { name: "AES-GCM", length: 256 },
     false,
@@ -61,7 +61,8 @@ export async function decryptBlob(
   const salt = b64decode(blob.salt);
   const iv = b64decode(blob.iv);
   const ciphertext = b64decode(blob.ciphertext);
-  const key = await deriveKey(passphrase, salt);
+  const iterations = blob.iterations ? parseInt(blob.iterations, 10) : PBKDF2_ITERATIONS;
+  const key = await deriveKey(passphrase, salt, iterations);
   const plaintext = await crypto.subtle.decrypt(
     { name: "AES-GCM", iv },
     key,

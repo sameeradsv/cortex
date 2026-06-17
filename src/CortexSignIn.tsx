@@ -2,12 +2,9 @@
 
 import { FormEvent, useId, useState } from "react";
 import { setAuthToken } from "./auth";
+import type { AuthUser } from "./AuthContext";
 
-export interface CortexSignInUser {
-  id: number;
-  username: string;
-  created_at: string;
-}
+export type CortexSignInUser = AuthUser;
 
 export interface CortexSignInProps {
   /** Base URL of the Cortex Auth Server, no trailing slash. e.g. "https://cortex-auth.onrender.com" */

@@ -56,7 +56,7 @@ const { user, loading, logout, refetch } = useAuth();
 - `tokenKey` — `localStorage` key to read/write the bearer token
 - `authPath` — optional, defaults to `"/api/auth"`; prefix for `/me` and `/logout` endpoints
 
-**Optimistic auth:** on mount, `AuthProvider` immediately restores `user` and sets `loading: false` from a localStorage cache, then revalidates with the server in the background. Consuming apps render without waiting for a network round-trip. If the server rejects the token (expired/invalid), the user is redirected to `/login` after the background check completes. A network error during revalidation preserves the cached state rather than logging the user out. The background fetch is cancelled via `AbortController` if the component unmounts before it completes.
+**Optimistic auth:** on mount, `AuthProvider` immediately restores `user` and sets `loading: false` from a localStorage cache, then revalidates with the server in the background. Consuming apps render without waiting for a network round-trip. If the server rejects the token (expired/invalid), `user` is set to `null` and the token is cleared — your layout guard should redirect to `/login` at that point. A network error during revalidation preserves the cached state rather than logging the user out. The background fetch is cancelled via `AbortController` if the component unmounts before it completes.
 
 **Instant logout:** `logout()` clears the token, cache, and user state then redirects immediately — the UI responds without waiting for the server. The `DELETE /auth/logout` request fires in the background to invalidate the server-side session.
 
@@ -120,7 +120,7 @@ const encrypted = await encryptBlob(plaintext, passphrase); // returns Record<st
 const plaintext = await decryptBlob(encrypted, passphrase); // returns string
 ```
 
-`decryptBlob` also accepts blobs with `format: "canopy-encrypted-export"` (the legacy format used before this package was extracted from Canopy), so old encrypted data migrates without any conversion step.
+`decryptBlob` also accepts blobs with `format: "canopy-encrypted-export"` (the legacy format used before this package was extracted from Canopy), so old encrypted data migrates without any conversion step. The `iterations` field stored in the blob is used when present, so blobs encrypted with a different iteration count (including legacy ones) decrypt correctly.
 
 ## Auth server
 
@@ -131,6 +131,23 @@ The `server/` directory is a FastAPI identity service deployed to Render backed 
 - **`/auth/me` response caching:** the endpoint sets `Cache-Control: private, max-age=30` so the browser reuses the response for 30 seconds. Multiple tabs opening at the same time hit the server once rather than once per tab.
 - **Pool sizing:** `pool_size=2, max_overflow=3` — tuned for a single Render free-tier instance against Neon's connection limits. SQLite (local dev) uses default pool settings.
 - **`created_at` format:** all API responses serialize `created_at` as ISO 8601 (`"2024-01-15T10:30:00"`) via Pydantic's `model_validate` — the `AuthUser.created_at: string` field on the frontend receives this directly.
+- **Rate limiting:** register is capped at 3 req/min per IP; login at 5 req/min per IP via `slowapi`. Returns `429 Too Many Requests` when exceeded.
+- **CORS:** `CORS_ORIGINS` env var must be set explicitly. No localhost fallback in any environment — add origins to a local `.env` file for development.
+
+### Auth endpoints
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| `GET` | `/auth/status` | — | `{ has_users: boolean }` — used by login pages to decide register vs login mode |
+| `POST` | `/auth/register` | — | `{ username, password }` → `{ token, user }` |
+| `POST` | `/auth/login` | — | `{ username, password }` → `{ token, user }` |
+| `GET` | `/auth/me` | Bearer | Returns current user; sets `Cache-Control: private, max-age=30` |
+| `DELETE` | `/auth/logout` | Bearer | Invalidates the current session token |
+| `DELETE` | `/auth/account` | Bearer | Deletes the account and all sessions |
+| `POST` | `/auth/request-reset` | — | `{ username }` → issues a 1-hour reset token (stored in DB; see note below) |
+| `POST` | `/auth/reset-password` | — | `{ token, new_password }` → updates password, invalidates all sessions |
+
+**Password reset note:** the reset token is stored in the `password_reset_tokens` table. Email delivery is not implemented — retrieve the token via the Neon SQL editor (`SELECT token FROM password_reset_tokens WHERE expires_at > NOW();`) and share it out-of-band. The token expires after 1 hour and is one-time-use.
 
 ## Viewing the Neon database
 
