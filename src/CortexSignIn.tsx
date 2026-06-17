@@ -75,7 +75,13 @@ export function CortexSignIn({
       });
       if (!res.ok) {
         const detail = await res.json().catch(() => ({}));
-        throw new Error(detail?.detail ?? `Error ${res.status}`);
+        const d = detail?.detail;
+        const msg = typeof d === "string"
+          ? d
+          : Array.isArray(d)
+            ? (d as Array<{ msg?: string }>).map((e) => e.msg ?? JSON.stringify(e)).join("; ")
+            : `Error ${res.status}`;
+        throw new Error(msg);
       }
       const data = await res.json();
       setAuthToken(tokenKey, data.token);
