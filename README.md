@@ -214,9 +214,13 @@ SELECT name, expiry_date FROM ingredients
 WHERE discarded_at IS NULL AND expiry_date <= NOW() + INTERVAL '3 days'
 ORDER BY expiry_date ASC;
 
--- recent decisions
-SELECT decision, recipe_name, satisfaction, created_at FROM cooking_history
-ORDER BY created_at DESC LIMIT 20;
+-- recent decisions (timestamp = IST meal time; decision: cook | order | eat_out)
+SELECT decision, recipe_name, restaurant_name, satisfaction, cost, timestamp
+FROM cooking_history ORDER BY timestamp DESC LIMIT 20;
+
+-- average satisfaction by decision type
+SELECT decision, ROUND(AVG(satisfaction), 1) AS avg_sat, COUNT(*) AS count
+FROM cooking_history WHERE satisfaction IS NOT NULL GROUP BY decision;
 ```
 
 **Circuit** (tasks)
