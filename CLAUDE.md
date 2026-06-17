@@ -70,6 +70,8 @@ CORS_ORIGINS=http://localhost:3000        # dev only — never add localhost to 
 
 **Rate limiting**: uses `slowapi` with `get_remote_address` key. Register: 3/min. Login: 5/min. Request-reset: 3/hour. Reset-password: 5/min.
 
+**`slowapi` + FastAPI body injection incompatibility**: `@limiter.limit` wraps the route function, hiding Pydantic model type annotations from FastAPI's dependency injector — FastAPI treats the parameter as a query param and returns 422 "Field required". Using `= Body()` as default is worse: FastAPI injects the raw `FieldInfo` object, causing `AttributeError` that escapes past `CORSMiddleware` to `ServerErrorMiddleware` (outside CORS) → 500 with no CORS headers → "Failed to fetch" in browser. **Fix**: all rate-limited endpoints that take a JSON body must use `async def` + `await request.json()` + `Model.model_validate()` via the `_parse_body` helper. Never add a typed Pydantic parameter to a `@limiter.limit`-decorated route.
+
 ## Installing in a consuming app
 
 ```json
