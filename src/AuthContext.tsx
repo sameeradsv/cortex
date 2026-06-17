@@ -94,18 +94,18 @@ export function AuthProvider({ children, apiBase, tokenKey, authPath = "/api/aut
 
   const logout = useCallback(async () => {
     const token = getAuthToken(tokenKey);
-    try {
-      await fetch(`${apiBase}${authPath}/logout`, {
-        method: "DELETE",
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-    } catch {
-      // proceed even if server call fails
-    }
+    // Clear local state immediately so the UI responds without waiting for the server.
     setAuthToken(tokenKey, null);
     setCachedUser(tokenKey, null);
     setUser(null);
     router.push("/login");
+    // Invalidate the server session in the background.
+    if (token) {
+      fetch(`${apiBase}${authPath}/logout`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      }).catch(() => {});
+    }
   }, [apiBase, authPath, tokenKey, router]);
 
   const refetch = useCallback(async () => {

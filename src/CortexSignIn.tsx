@@ -147,7 +147,7 @@ export function CortexSignIn({
           />
         </div>
 
-        {error && <p className={cx.error ?? ""} style={{ color: "red", fontSize: "0.8em" }}>{error}</p>}
+        {error && <p className={cx.error ?? ""} style={cx.error ? undefined : { color: "red", fontSize: "0.8em" }}>{error}</p>}
 
         <button
           type="submit"

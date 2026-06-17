@@ -58,6 +58,8 @@ const { user, loading, logout, refetch } = useAuth();
 
 **Optimistic auth:** on mount, `AuthProvider` immediately restores `user` and sets `loading: false` from a localStorage cache, then revalidates with the server in the background. Consuming apps render without waiting for a network round-trip. If the server rejects the token (expired/invalid), the user is redirected to `/login` after the background check completes. A network error during revalidation preserves the cached state rather than logging the user out. The background fetch is cancelled via `AbortController` if the component unmounts before it completes.
 
+**Instant logout:** `logout()` clears the token, cache, and user state then redirects immediately — the UI responds without waiting for the server. The `DELETE /auth/logout` request fires in the background to invalidate the server-side session.
+
 `loading` is only `true` on the very first visit (no cache yet) or after an explicit `refetch()` call when no cache is available.
 
 ### CortexSignIn component
