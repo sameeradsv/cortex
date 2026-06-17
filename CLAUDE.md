@@ -58,6 +58,8 @@ CORS_ORIGINS=http://localhost:3000        # dev only — never add localhost to 
 
 **Instant logout**: `logout()` clears token/cache/user and redirects immediately; `DELETE /auth/logout` fires in the background.
 
+**`CortexSignIn` error extraction**: FastAPI's `detail` field is a string for `HTTPException` responses but an array of `{loc, msg, type}` objects for Pydantic 422 validation errors. `CortexSignIn` checks the type: strings are used directly; arrays have `.msg` extracted from each item and joined with `"; "`. Do not simplify this to `detail?.detail` — that coerces arrays to `[object Object]`.
+
 **Crypto**: `encryptBlob` always uses 390k PBKDF2 iterations. `decryptBlob` reads `blob.iterations` if present so legacy blobs with different iteration counts decrypt correctly.
 
 **Username format**: `[a-z0-9_.-]+`, lowercase, enforced on both register and login (`.strip().lower()`).
