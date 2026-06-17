@@ -132,6 +132,34 @@ The `server/` directory is a FastAPI identity service deployed to Render backed 
 - **Pool sizing:** `pool_size=2, max_overflow=3` — tuned for a single Render free-tier instance against Neon's connection limits. SQLite (local dev) uses default pool settings.
 - **`created_at` format:** all API responses serialize `created_at` as ISO 8601 (`"2024-01-15T10:30:00"`) via Pydantic's `model_validate` — the `AuthUser.created_at: string` field on the frontend receives this directly.
 
+## Viewing the Neon database
+
+Each app (canopy, chef, circuit) and the cortex auth server share a Neon PostgreSQL instance. Three ways to browse or query data:
+
+### 1. Neon console SQL editor (no install)
+Go to [console.neon.tech](https://console.neon.tech) → open the project → **SQL Editor** tab. Run any query directly:
+```sql
+SELECT * FROM people LIMIT 20;
+SELECT * FROM interactions ORDER BY occurred_at DESC LIMIT 10;
+```
+
+### 2. psql
+Grab the connection string from the Neon dashboard (Connection Details → copy the `psql` command) and run:
+```bash
+psql "postgresql://user:password@host/dbname?sslmode=require"
+```
+
+### 3. GUI client (TablePlus / DBeaver / pgAdmin)
+Paste the same connection string. TablePlus has a free tier and works well on Windows/Mac.
+
+### 4. App export endpoint (no DB client needed)
+Each app exposes a JSON dump of the current user's data:
+```
+GET /api/export
+Authorization: Bearer <token>
+```
+Returns all records as JSON. Useful for quick data checks without a DB client. (`AUTH_REQUIRED=true` in production — token required.)
+
 ## Updating cortex
 
 Edit the source in this repo, commit, and push. Then in each consuming repo:
