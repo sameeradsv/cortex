@@ -5,7 +5,7 @@ import secrets
 from datetime import datetime, timedelta
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response
+from fastapi import APIRouter, Body, Depends, Header, HTTPException, Request, Response
 from pydantic import BaseModel
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
@@ -78,7 +78,7 @@ def auth_status(db: Session = Depends(get_db)):
 
 @router.post("/register", response_model=AuthResponse, status_code=201)
 @limiter.limit("3/minute")
-def register(request: Request, data: RegisterRequest, db: Session = Depends(get_db)):
+def register(request: Request, data: RegisterRequest = Body(), db: Session = Depends(get_db)):
     if len(data.username.strip()) < 2:
         raise HTTPException(400, "Username must be at least 2 characters")
     if len(data.password) < 6:
@@ -100,7 +100,7 @@ def register(request: Request, data: RegisterRequest, db: Session = Depends(get_
 
 @router.post("/login", response_model=AuthResponse)
 @limiter.limit("5/minute")
-def login(request: Request, data: LoginRequest, db: Session = Depends(get_db)):
+def login(request: Request, data: LoginRequest = Body(), db: Session = Depends(get_db)):
     username = data.username.strip().lower()
     user = db.scalar(select(User).where(User.username == username))
     if not user or not verify_password(data.password, user.password_hash):
@@ -138,7 +138,7 @@ def delete_account(
 
 @router.post("/request-reset", status_code=202)
 @limiter.limit("3/hour")
-def request_reset(request: Request, data: RequestResetRequest, db: Session = Depends(get_db)):
+def request_reset(request: Request, data: RequestResetRequest = Body(), db: Session = Depends(get_db)):
     username = data.username.strip().lower()
     user = db.scalar(select(User).where(User.username == username))
     # Return the same response whether or not the user exists to prevent enumeration.
@@ -159,7 +159,7 @@ def request_reset(request: Request, data: RequestResetRequest, db: Session = Dep
 
 @router.post("/reset-password", status_code=200)
 @limiter.limit("5/minute")
-def reset_password(request: Request, data: ResetPasswordRequest, db: Session = Depends(get_db)):
+def reset_password(request: Request, data: ResetPasswordRequest = Body(), db: Session = Depends(get_db)):
     if len(data.new_password) < 6:
         raise HTTPException(400, "Password must be at least 6 characters")
     now = _now_naive()
