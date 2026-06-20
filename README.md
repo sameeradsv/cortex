@@ -2,6 +2,8 @@
 
 Shared auth and crypto primitives for Next.js apps in this monorepo (canopy, chef, circuit).
 
+Shared deployment migration note: see [`docs/render-to-vercel.md`](docs/render-to-vercel.md) for the repeatable Render-to-Vercel FastAPI backend migration used by the sibling apps.
+
 ## What's in here
 
 | Export | File | Description |
