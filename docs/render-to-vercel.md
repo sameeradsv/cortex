@@ -85,6 +85,39 @@ DATABASE_URL="postgresql://..." python -m app.database
 
 For existing production databases already used by Render, reuse the same `DATABASE_URL` and set `INIT_DB_ON_STARTUP=false`.
 
+## Schema Changes After Startup Migrations Are Disabled
+
+Disabling startup migrations means schema changes are now an explicit release step.
+
+For additive changes:
+
+1. Add the model/schema change.
+2. Add an idempotent migration function with a unique migration name.
+3. Keep local/test startup migrations enabled so tests initialize the schema.
+4. Before the production deploy that requires the new schema, run the migration once against production:
+
+```bash
+cd backend
+DATABASE_URL="postgresql://..." python -m app.database
+```
+
+5. Deploy or merge the app code after the production database is ready.
+
+Because Vercel automatically deploys production on pushes/merges to the production branch, use a feature branch for schema work:
+
+1. Commit the migration and code on a branch.
+2. Run the one-shot migration from that branch against production.
+3. Merge/push to `main` so Vercel deploys the already-compatible code.
+
+For risky or non-backward-compatible changes, use an expand/contract rollout:
+
+1. Expand: add nullable columns/tables and deploy code that can tolerate old and new schema.
+2. Backfill data manually or with a one-shot script.
+3. Switch reads/writes to the new schema.
+4. Contract later by dropping old columns/tables only after all deployed code no longer needs them.
+
+Avoid destructive changes in startup hooks. Keep production schema changes explicit and reversible.
+
 ## Vercel Project Setup
 
 Create one Vercel project per backend app.
@@ -128,6 +161,15 @@ After deploy, verify:
 ```text
 https://<project>.vercel.app/api/health
 ```
+
+## Automatic Deployments
+
+Vercel does not need manual deployments after the Git project is connected.
+
+- Pushes to non-production branches create Preview deployments.
+- Merges or pushes to the configured production branch create Production deployments.
+- The production branch is usually `main`; confirm it in Vercel Project Settings -> Environments -> Production -> Branch Tracking.
+- Manual redeploys are only needed when retrying a failed deployment, deploying an older Git reference, or recovering from interrupted automation.
 
 Then update the frontend build variable for that app, for example:
 

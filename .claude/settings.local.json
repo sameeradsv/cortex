@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem *)",
+      "Bash(npx tsc *)",
+      "Bash(npx jest *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(gh repo *)",
+      "PowerShell(gh repo *)",
+      "Bash(git push *)",
+      "Bash(cp D:/Downloads/Personal/Development/cortex-server/.env.example D:/Downloads/Personal/Development/cortex/server/.env.example)",
+      "Bash(cp D:/Downloads/Personal/Development/cortex-server/.gitignore D:/Downloads/Personal/Development/cortex/server/.gitignore)",
+      "Bash(git -C D:/Downloads/Personal/Development/cortex add server/.env.example server/.gitignore)",
+      "Bash(git -C D:/Downloads/Personal/Development/cortex status)",
+      "Bash(git *)",
+      "Bash(xargs ls)",
+      "Bash(npm install *)",
+      "Bash(xargs grep -l \"energy\")",
+      "Bash(Select-Object Name, PSIsContainer)",
+      "Read(//d/Downloads/Personal/Development/**)",
+      "Read(//d/Downloads/Personal/Development//**)",
+      "Bash(grep -rn \"# TODO\\\\|# FIXME\\\\|# HACK\\\\|pass$\\\\|raise NotImplementedError\" \"D:/Downloads/Personal/Development/canopy/backend/app/\" \"D:/Downloads/Personal/Development/chef/backend/app/\" \"D:/Downloads/Personal/Development/circuit/backend/app/\" \"D:/Downloads/Personal/Development/cortex/server/app/\")"
+    ]
+  }
+}
