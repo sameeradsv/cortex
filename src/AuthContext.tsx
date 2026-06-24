@@ -33,7 +33,7 @@ const AuthContext = createContext<AuthContextValue>({
 
 interface AuthProviderProps {
   children: React.ReactNode;
-  /** Base URL without trailing slash, e.g. "" (dev proxy) or "https://myapp.onrender.com" */
+  /** Base URL without trailing slash, e.g. "" (dev proxy) or "https://myapp.vercel.app" */
   apiBase: string;
   /** localStorage key for the auth token, e.g. "canopy_auth_token" */
   tokenKey: string;

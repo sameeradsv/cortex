@@ -22,9 +22,19 @@ class Base(DeclarativeBase):
     pass
 
 
+def init_db():
+    from app import models  # noqa: F401
+
+    Base.metadata.create_all(bind=engine)
+
+
 def get_db():
     db = SessionLocal()
     try:
         yield db
     finally:
         db.close()
+
+
+if __name__ == "__main__":
+    init_db()

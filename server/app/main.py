@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
-from app.database import Base, engine
+from app.database import init_db
 from app.limiter import limiter
 from app.routers import auth
 
@@ -18,7 +18,8 @@ load_dotenv()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    Base.metadata.create_all(bind=engine)
+    if os.getenv("INIT_DB_ON_STARTUP", "true").lower() in {"1", "true", "yes", "on"}:
+        init_db()
     yield
 
 
@@ -38,8 +39,14 @@ app.add_middleware(
 )
 
 app.include_router(auth.router)
+app.include_router(auth.router, prefix="/api")
 
 
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+
+@app.get("/api/health")
+def api_health():
+    return health()

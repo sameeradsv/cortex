@@ -7,7 +7,7 @@ import type { AuthUser } from "./AuthContext";
 export type CortexSignInUser = AuthUser;
 
 export interface CortexSignInProps {
-  /** Base URL of the Cortex Auth Server, no trailing slash. e.g. "https://cortex-auth.onrender.com" */
+  /** Base URL of the Cortex Auth Server, no trailing slash. e.g. "https://cortex-auth.vercel.app" */
   cortexApiBase: string;
   /** localStorage key to store the token under, e.g. "canopy_auth_token" */
   tokenKey: string;

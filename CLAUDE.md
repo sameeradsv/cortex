@@ -18,7 +18,8 @@ uvicorn app.main:app --reload --port 8004
 Dev env (`.env` in `server/`):
 ```bash
 DATABASE_URL=sqlite:///./data/cortex.db   # Postgres in production (Neon)
-CORS_ORIGINS=http://localhost:3000        # dev only — never add localhost to render.yaml
+CORS_ORIGINS=http://localhost:3000        # dev only; never add localhost to Vercel project env
+INIT_DB_ON_STARTUP=true                   # local default; set false in Vercel after schema init
 ```
 
 ## What's in this repo
@@ -66,7 +67,9 @@ CORS_ORIGINS=http://localhost:3000        # dev only — never add localhost to 
 
 **Session model**: `auth_sessions` table; `AuthSession.user_id` and `PasswordResetToken.user_id` both have `index=True` for O(1) DELETE WHERE user_id queries during password reset and session cleanup.
 
-**CORS**: `CORS_ORIGINS` env var required; no localhost fallback in `main.py` or `render.yaml`. Add `http://localhost:3000` to a local `.env` file for development.
+**CORS**: `CORS_ORIGINS` env var required; no localhost fallback in `main.py` or deployment config. Add `http://localhost:3000` to a local `.env` file for development.
+
+**Vercel**: backend deploys from `server/` with `server/api/index.py` importing `app.main:app`. Set `INIT_DB_ON_STARTUP=false` in Vercel after the database schema exists. For one-shot schema init/migrations, run `cd server && DATABASE_URL="postgresql://..." python -m app.database`.
 
 **Rate limiting**: uses `slowapi` with `get_remote_address` key. Register: 3/min. Login: 5/min. Request-reset: 3/hour. Reset-password: 5/min.
 
@@ -113,4 +116,4 @@ All UI changes to `CortexSignIn` and any future auth UI must work correctly acro
 
 **`autoFocus`**: off by default — passing `autoFocus={true}` opens the on-screen keyboard immediately on mobile; leave it off unless the page has no other focusable content above the fold.
 
-**No localhost**: never add `localhost` or `127.0.0.1` to `CORS_ORIGINS`, `render.yaml`, or Pydantic config defaults. Dev origins belong in `.env` only.
+**No localhost**: never add `localhost` or `127.0.0.1` to production `CORS_ORIGINS`, Vercel project env, or Pydantic config defaults. Dev origins belong in `.env` only.

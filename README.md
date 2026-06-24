@@ -126,12 +126,13 @@ const plaintext = await decryptBlob(encrypted, passphrase); // returns string
 
 ## Auth server
 
-The `server/` directory is a FastAPI identity service deployed to Render backed by a Neon PostgreSQL database.
+The `server/` directory is a FastAPI identity service deployed to Vercel backed by a Neon PostgreSQL database.
 
-- **Lifespan startup:** `Base.metadata.create_all` runs inside the FastAPI `lifespan` context, after uvicorn is ready to serve. The `/health` endpoint is available immediately on cold start while DB init completes in the background.
+- **Vercel entrypoint:** `server/api/index.py` imports the existing FastAPI app for Vercel Python Functions. `server/vercel.json` routes requests to that function.
+- **Schema initialization:** startup table creation is controlled by `INIT_DB_ON_STARTUP` and defaults to enabled for local development. In Vercel production, set `INIT_DB_ON_STARTUP=false` after the database schema exists and run `python -m app.database` as the explicit one-shot schema init/migration command.
 - **Connection resilience:** `pool_pre_ping=True` on the SQLAlchemy engine re-tests connections before use, preventing stale-connection errors after Neon's serverless pooler drops idle connections.
 - **`/auth/me` response caching:** the endpoint sets `Cache-Control: private, max-age=30` so the browser reuses the response for 30 seconds. Multiple tabs opening at the same time hit the server once rather than once per tab.
-- **Pool sizing:** `pool_size=2, max_overflow=3` — tuned for a single Render free-tier instance against Neon's connection limits. SQLite (local dev) uses default pool settings.
+- **Pool sizing:** `pool_size=2, max_overflow=3` for PostgreSQL, keeping connections conservative against Neon's connection limits. SQLite (local dev) uses default pool settings.
 - **`created_at` format:** all API responses serialize `created_at` as ISO 8601 (`"2024-01-15T10:30:00"`) via Pydantic's `model_validate` — the `AuthUser.created_at: string` field on the frontend receives this directly.
 - **Rate limiting:** register is capped at 3 req/min per IP; login at 5 req/min per IP via `slowapi`. Returns `429 Too Many Requests` when exceeded.
 - **CORS:** `CORS_ORIGINS` env var must be set explicitly. No localhost fallback in any environment — add origins to a local `.env` file for development.
@@ -157,7 +158,7 @@ Each app (Canopy, Chef, Circuit) and the Cortex auth server each have their own 
 
 ### Getting the connection string
 
-**From Render (quickest):** go to the app's Render service → **Environment** tab → copy `DATABASE_URL`. It has this shape:
+**From Vercel:** go to the Cortex auth project, then **Settings** -> **Environment Variables**, and copy `DATABASE_URL`. It has this shape:
 
 ```
 postgresql://user:password@ep-xxxx-xxxx.region.aws.neon.tech/dbname?sslmode=require
