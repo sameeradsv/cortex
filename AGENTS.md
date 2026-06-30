@@ -103,13 +103,19 @@ Each app uses `CortexSignIn` as the primary sign-in path, with a "Use just this 
 
 ## UI & Responsive Standards
 
-All UI changes to `CortexSignIn` and any future auth UI must work correctly across every view:
+## Change workflow
+
+- Follow code changes with appropriate documentation edits in the same work session when behavior, architecture, commands, environment variables, or user-facing workflows change.
+- Once requested changes are complete, commit and push them without waiting for another prompt, unless the user explicitly asks to wait for approval or review.
+
+All UI changes to `CortexSignIn` and any future auth UI must work correctly across **every** combination of laptop, iPad, and mobile layouts and orientations:
 
 | View | Width | Notes |
 |------|-------|-------|
 | Mobile portrait | ≤ 430 px | Primary design target |
 | Mobile landscape | ≤ 932 px, short viewport | No horizontal scroll; critical controls visible |
-| Tablet / iPad | 768–1024 px | Component is typically embedded in a page; respond to container width |
+| Tablet / iPad portrait | 768–1024 px | Component is typically embedded in a page; respond to container width |
+| Tablet / iPad landscape | 1024–1366 px | Same as portrait but wider; avoid dead whitespace |
 | Laptop / desktop | ≥ 1025 px | Full layout |
 
 **Touch targets**: 44 × 44 px minimum on all buttons (submit, toggle, local-mode). Already enforced via `min-height: 44px` on the submit button and `padding: 12px` on toggle/local buttons.
