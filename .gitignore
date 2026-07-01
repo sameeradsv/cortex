@@ -2,3 +2,6 @@ node_modules/
 *.js
 *.d.ts
 *.tgz
+
+# Claude Code local settings (machine-specific tool permissions)
+.claude/settings.local.json
